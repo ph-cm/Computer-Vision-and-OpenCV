@@ -92,3 +92,53 @@ def slice(img):
         y+=char_h
 sliced = list(slice(trim))
 display_images(sliced)
+
+#Motion Detection using Frame Difference
+
+vid = cv2.VideoCapture(r'c:\Users\phenr\Downloads\FPV Drone Flight through Beautiful Iceland Canyon.mp4')
+
+
+c = 0
+frames = []
+while vid.isOpened():
+    ret, frame = vid.read()
+    if not ret:
+        break
+    frames.append(frame)
+    c+=1
+vid.release()
+print(f'Total frames: {c}')
+display_images(frames[::150])
+
+bwframes = [cv2.cvtColor(x,cv2.COLOR_BGR2GRAY) for x in frames]
+diffs = [(p2-p1) for p1,p2 in zip(bwframes[:-1], bwframes[1:])]
+diff_amps = np.array([np.linalg.norm(x) for x in diffs])
+plt.plot(diff_amps)
+display_images(diffs[::150],titles=diff_amps[::150])
+
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
+threshold = 150000
+plt.plot(moving_average(diff_amps,10))
+plt.axhline(y=threshold,color = 'r', linestyle='-')
+plt.show()
+
+active_frames = np.where(diff_amps>threshold)[0]
+
+def subsequence(seq,min_length=30):
+    ss = []
+    for i,x in enumerate(seq[:-1]):
+        ss.append(x)
+        if x+1 != seq[i+1]:
+            if len(ss)>min_length:
+                return ss
+            ss.clear()
+
+sub = subsequence(active_frames)
+print(sub)
+
+plt.imshow(frames[(sub[0]+sub[-1])//2])
+plt.show()
+
+plt.imshow(cv2.cvtColor(frames[(sub[0]+sub[-1])//2],cv2.COLOR_BGR2RGB))
+plt.show()
