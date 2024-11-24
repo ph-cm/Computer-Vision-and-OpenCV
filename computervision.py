@@ -142,3 +142,23 @@ plt.show()
 
 plt.imshow(cv2.cvtColor(frames[(sub[0]+sub[-1])//2],cv2.COLOR_BGR2RGB))
 plt.show()
+
+#Extract Motion using Optical Flow
+flows = [cv2.calcOpticalFlowFarneback(f1,f2,None, 0.5,3,15,3,5,1.2,0) for f1,f2 in zip(bwframes[:-1],bwframes[1:])]
+flows[0].shape
+
+def flow_to_hsv(flow):
+    hsvImg = np.zeros((flow.shape[0],flow.shape[1],3), dtype=np.uint8)
+    mag, ang = cv2.cartToPolar(flow[...,0], flow[...,1])
+    hsvImg[...,0] = 0.5 * ang * 180 / np.pi
+    hsvImg[..., 1] = 255
+    hsvImg[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    return cv2.cvtColor(hsvImg, cv2.COLOR_HSV2BGR)
+
+start = sub[0]
+stop = sub[-1]
+print(start,stop)
+
+frms = [flow_to_hsv(x) for x in flows[start:stop]]
+display_images(frms[::25])
+plt.show()
